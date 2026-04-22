@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .header img {
+      width: 100%;
+      height: auto;
+    }
+    .title {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-decoration: underline;
+    }
+    .section {
+      margin-bottom: 15px;
+    }
+    .section-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .box {
+      border: 1px solid #000;
+      padding: 8px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+ 
+  <!-- Encabezado como imagen -->
+  <div class="header" style="text-align: left;">
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRv5hq58Gj3GCQwR2zFNawstaVR1ES6rUopFg&s"
+         alt="Encabezado Acta"
+         style="width:250px; height:auto;">
+</div>
+
+  <div class="title">ACTA DE ACTIVIDADES REALIZADAS<br>PROGRAMACIÓN N° {{p.codigo_programacion}} - OGTI - DIRIS LIMA CENTRO</div>
+
+ <!-- Establecimiento -->
+  <div class="section">
+    <div class="section-title">I. UNIDAD ORGÁNICA DONDE SE PRESTÓ SERVICIO</div>
+    <div class="box">
+      {{ p.dependencia_service_nombre|default_if_none:""|linebreaksbr }}
+    <br><strong>DIRECCION: </strong>{{ p.direccion|default_if_none:""|linebreaksbr }}
+    </div>
+  </div>
+
+
+<td  class="text-center">
+   
+
+  <!-- Descripcion Gene -->
+  <div class="section">
+    <div class="section-title">II. DESCRIPCIÓN GENERAL</div>
+    <div class="box">
+      {{ p.descripcion_general|default_if_none:""|linebreaksbr }}
+    </div>
+  </div>
+  <!-- Trabajos Realizados -->
+  <div class="section">
+    <div class="section-title">III. DETALLE Y DESCRIPCIÓN DE LOS TRABAJOS REALIZADOS</div>
+    <div class="box">
+      {{ p.trabajo_realizado|default_if_none:""|linebreaksbr }}
+    </div>
+  </div>
+
+  <!-- Recomendaciones -->
+  <div class="section">
+    <div class="section-title">IV. RECOMENDACIONES</div>
+    <div class="box">
+      {{ p.recomendaciones|default_if_none:""|linebreaksbr }}
+    </div>
+  </div>
+
+  <!-- Observaciones -->
+  <div class="section">
+    <div class="section-title">V. OBSERVACIONES – DESCRIPCIÓN DE LA OBSERVACIÓN</div>
+    <div class="box">
+      {{ p.observaciones|default_if_none:""|linebreaksbr }}
+    </div>
+  </div>
+
+ <!-- Fecha debajo de Observaciones -->
+  <div style="text-align:left; margin-top:20px; font-size:13px;">
+      Lima, {% now "j \d\e F \d\e\l Y" %}
+  </div>
+   
+  <table width="100%" 
+       style="margin-top:20px; text-align:center; font-size:12px; border:1px solid black; border-collapse:collapse;">
+  <tr>
+    <td style="border:1px solid black; padding:30px 10px 10px 10px;">
+      ___________________________<br>
+      <b>Firma del Personal que deja conforme </b><br>
+
+      <div style="text-align:left; margin:0; padding:0;">
+        <b>Nombres y Apellidos: </b>   
+      </div>
+      <div style="text-align:left; margin:0; padding:0;">
+        <b>DNI: </b>
+      </div>
+    </td>
+
+    <td style="border:1px solid black; padding:30px 10px 10px 10px;">
+      ___________________________<br>
+      <b>Firma del Usuario(a) que da conformidad</b><br>
+
+      <div style="text-align:left; margin:0; padding:0;">
+        <b>Nombres y Apellidos: </b>
+      </div>
+      <div style="text-align:left; margin:0; padding:0;">
+        <b>DNI: </b>
+      </div>
+    </td>
+  </tr>
+</table>
+
+</body>
+
+</html>
+

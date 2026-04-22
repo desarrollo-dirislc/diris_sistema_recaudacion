@@ -1,0 +1,395 @@
+{% extends 'dashboard.html' %}
+{% load  paginator i18n %}
+
+{% block  container %}
+<style>
+    #leyenda {
+            margin-left: 20px;
+            background-color: grey; 
+            color: white; 
+        }
+        .prioridad-1 {
+            background-color: rgb(245, 11, 11); /* Color para Prioridad I */
+            color: white; /* Texto en blanco para mejor visibilidad */
+        }
+        .prioridad-2 {
+            background-color: rgb(243, 161, 10); /* Color para Prioridad II */
+            color: black; /* Texto en blanco para mejor visibilidad */
+        }
+        .prioridad-3 {
+            background-color: rgb(247, 243, 27); /* Color para Prioridad III */
+            color: black; /* Texto en blanco para mejor visibilidad */
+        }
+        .prioridad-4 {
+            background-color: green; /* Color para Prioridad III */
+            color: white; /* Texto en blanco para mejor visibilidad */
+        }
+        .prioridad-5 {
+            background-color: rgb(79, 148, 238); /* Color para Prioridad III */
+            color: white; /* Texto en blanco para mejor visibilidad */
+        }
+        .custom-margin {
+    margin-right: 50px; /* Ajusta este valor según sea necesario */
+}
+/* Estilo general */
+.table-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+/* Encabezado */
+.table thead th {
+  background-color: #78a0dd;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Filas */
+ 
+ 
+
+/* Celdas */
+.table td {
+  vertical-align: middle;
+  font-size: 0.95rem;
+}
+
+/* Código de ticket resaltado */
+.table td:nth-child(2) {
+  font-weight: 600;
+  color: #0d6efd;
+}
+
+/* Botones de opciones */
+.table .btn {
+  border-radius: 30px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+/* Responsive scroll */
+.table-responsive {
+  border-radius: 12px;
+}
+</style>
+
+    <div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            
+            <!-- FORMULARIO PDF -->
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <!--<form method="get" action="{% url 'reclamo:reporte-programaciones-pdf' %}" 
+                      class="row mt-2 g-2" id="form-programacion">
+                    
+                    <div class="col-md-5">
+                        <label for="fecha_inicio" class="form-label text-white">Desde:</label>
+                        <input type="date" id="fecha_inicio" name="fecha_inicio" class="form-control" required>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label for="fecha_fin" class="form-label text-white">Hasta:</label>
+                        <input type="date" id="fecha_fin" name="fecha_fin" class="form-control" required>
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" 
+                            class="btn btn-danger d-flex align-items-center justify-content-center w-100" 
+                            style="padding-top: 14px; padding-bottom: 14px;">
+                            <i class="la la-file-pdf-o me-2"></i>
+                            Generar PDF
+                        </button>
+                    </div>
+                </form>-->
+            </div>
+
+
+
+
+            <!-- BOTON NUEVA VENTA -->
+            <div class="content-header-right col-md-6 col-12">
+                <div class="float-md-right">
+                    <div class="col-sm-12 col-lg-12 col-xl-12">
+                        <!--<a href="{% url 'reclamo:entidad-reclamo-new-programacion' %}" class="btn btn-success btn-block">
+                            <i class="la la-plus font-small-2"></i>
+                            Nueva venta
+                        </a>-->
+                        <form method="post" action="{% url 'reclamo:crear-venta-entidad' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success btn-block">
+        <i class="la la-plus font-small-2"></i>
+        Nueva venta
+    </button>
+</form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CONTENIDO -->
+        <div class="content-body">
+            <section id="patients-list">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+
+                            <div class="card-header" style="background-color:rgb(232, 236, 236)">
+                                <h1 class="mb-0">
+                                    <strong>Listado de Ventas</strong>
+                                    <strong class="text-primary">
+                                        ({{ page_obj.paginator.count }})
+                                    </strong>
+                                </h1>
+                            </div>
+
+                            <div class="card-body collapse show" style="background-color:rgb(221, 218, 218)">
+                                <div class="row">
+                                    <div class="col-md-12">
+
+                                        {% if sin_reclamo %}
+                                            <br>
+                                            <a style="font-size: 17px!important;"
+                                               href="{{ sin_reclamo.archivo.url }}" download>
+                                               <i class="ft-file-plus"> Ver archivo </i>
+                                            </a>
+                                        {% endif %}
+
+
+<form method="get" class="row mb-3">
+
+    <div class="col-md-3">
+    <label>Desde:</label>
+    <input type="date" name="fecha_inicio" class="form-control"
+           value="{{ request.GET.fecha_inicio }}">
+</div>
+
+<div class="col-md-3">
+    <label>Hasta:</label>
+    <input type="date" name="fecha_fin" class="form-control"
+           value="{{ request.GET.fecha_fin }}">
+</div>
+
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">
+            Filtrar
+        </button>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+        <a href="{% url 'reclamo:ventas-x-entidad' %}" class="btn btn-secondary w-100">
+            Limpiar
+        </a>
+    </div>
+
+</form>
+
+
+
+                                        <div class="table-responsive mt-2">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <!--<th class="text-center">Estado</th>-->
+                                                    <th class="text-center">Cod. venta</th>
+                                                    <th class="text-center">Cod. eess</th>
+                                                    <th class="text-center">Establecimiento</th>
+                                                        <th class="text-center">Fecha y hora</th>
+
+                                                        
+                                                        <th class="text-center">OPCIONES</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    {% for p in programaciones %}
+                                                    <tr>
+                                                        <td class="text-center">{{ forloop.counter0|add:page_obj.start_index }}</td>
+
+                                                        <!--<td class="text-center">
+                                                            {% if p.estado_programacion == 0 %}
+                                                                <span class="badge badge-pill badge-primary">Nuevo</span>
+                                                            {% endif %}
+                                                        </td>-->
+                                                                <td class="text-center">
+                                                            {{ p.codigo_programacion|default_if_none:"" }}
+                                                        </td>
+                                                        <td class="text-center">
+                                                            {{ p.dependencia_service|default_if_none:"" }}
+                                                        </td>
+
+                                                        <td class="text-center">
+                                                            {{ p.dependencia_service_nombre|default_if_none:"" }}
+                                                        </td>
+                                                        <td class="text-center">
+                                                            {{ p.created_at|default_if_none:"" }}
+                                                        </td>
+                                                        
+                                                        
+                                                        
+
+                                                        <td class="text-center">
+                                                            <!--<a class="btn btn-warning btn-sm"
+                                                               title="Ver/Editar"
+                                                               href="{% url 'reclamo:entidad-reclamo-edit-programacion' p.id %}">
+                                                                <i class="ft-eye font-medium-2"></i>
+                                                            </a>-->
+
+                                                            <a class="btn btn-success btn-sm"
+                                                               title="Ingresar venta"
+                                                               href="{% url 'reclamo:medida-adoptada-new-entidad' p.id %}">
+                                                                <i class="ft-shopping-cart font-medium-2"></i>
+                                                            </a>
+
+                                                            <a href="{% url 'reclamo:entidad-reclamo-delete-programacion-entidad' p.id %}"
+                                                               class="btn btn-danger btn-sm"
+                                                               title="Eliminar">
+                                                                <i class="ft ft-delete font-medium-2"></i>
+                                                            </a>
+
+                                                            {% if p.evidencia and p.documento %}
+                                                            <a class="btn btn-success btn-sm"
+                                                               title="Confirmar atención"
+                                                               data-toggle="modal"
+                                                               data-id="{{ p.id }}"
+                                                               data-target="#expedienteModal3">
+                                                                <i class="ft-check font-medium-2"></i>
+                                                            </a>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+
+                                                    {% empty %}
+                                                    <tr>
+                                                        <td colspan="4" class="text-center">
+                                                            No hay registros disponibles
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {% paginator %}
+
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </div>
+</div>
+ 
+ 
+
+
+
+
+
+ 
+
+{% endblock container %}
+
+
+{% block static %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("form-programacion");
+    const fechaInicioInput = document.getElementById("fecha_inicio");
+    const fechaFinInput = document.getElementById("fecha_fin");
+
+    form.addEventListener("submit", function (e) {
+      const fechaInicio = fechaInicioInput.value;
+      const fechaFin = fechaFinInput.value;
+
+      if (!fechaInicio || !fechaFin) {
+        alert("Debe seleccionar ambas fechas.");
+        e.preventDefault();
+        return;
+      }
+
+      if (fechaInicio > fechaFin) {
+        alert("La fecha de inicio no puede ser mayor que la fecha de fin.");
+        e.preventDefault();
+      }
+    });
+  });
+</script>
+
+
+
+    <script>
+        // Modal 1
+$('#expedienteModal').on('show.bs.modal', function (e) {
+    var id = $(e.relatedTarget).data('id');
+    $("#id_reclamo1").val(id);
+});
+
+$("#expedienteForm").submit(function (e) {
+    e.preventDefault();
+    $("#buttonGuardar1").prop('disabled', true);
+    setTimeout(function () {
+        $("#buttonGuardar1").prop('disabled', false);
+    }, 6000);
+    e.currentTarget.submit();
+});
+
+// Modal 2
+$('#expedienteModal2').on('show.bs.modal', function (e) {
+    var id = $(e.relatedTarget).data('id');
+    $("#id_reclamo2").val(id);
+});
+
+$("#expedienteForm2").submit(function (e) {
+    e.preventDefault();
+    $("#buttonGuardar2").prop('disabled', true);
+    setTimeout(function () {
+        $("#buttonGuardar2").prop('disabled', false);
+    }, 6000);
+    e.currentTarget.submit();
+});
+
+
+        $("#sinReclamoForm").submit(function (e) {
+            e.preventDefault();
+            $("#buttonGuardarSinReclamo").prop('disabled', true);
+            setTimeout(function () {
+                $("#buttonGuardarSinReclamo").prop('disabled', false);
+            }, 6000)
+            e.currentTarget.submit();
+        });
+
+
+//Modal 3
+$('#expedienteModal3').on('show.bs.modal', function (e) {
+    var id = $(e.relatedTarget).data('id');
+    $("#id_reclamo3").val(id);
+});
+
+
+
+
+  $('#programacionModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget); 
+    var id = button.data('id'); 
+    var modal = $(this);
+    modal.find('#id_programacion').val(id);
+  });
+    </script>
+{% endblock static %}
+
+
+
+ 
