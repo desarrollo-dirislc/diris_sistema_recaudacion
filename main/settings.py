@@ -87,7 +87,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'diris_sistema_recaudacion',
         'USER': 'root',
-        'PASSWORD': '1234',
+        'PASSWORD': 'Administrador@123',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
