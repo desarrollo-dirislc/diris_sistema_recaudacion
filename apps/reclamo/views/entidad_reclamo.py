@@ -80,6 +80,7 @@ from django.contrib.auth import get_user_model
 from django.db import connection
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+
  
 
 
@@ -4719,6 +4720,287 @@ class Reporte_consolidado_x_clasificador_excel_admin(View):
 
         wb.save(response)
         return response
+
+
+class Reporte_consolidado_x_clasificador_admin_sismed(View):
+
+    def get(self, request):
+        fecha_inicio = request.GET.get('fecha_inicio')
+        fecha_fin = request.GET.get('fecha_fin')
+
+        # 🔥 VALIDACIÓN DE FECHAS
+        if fecha_inicio and fecha_fin:
+            if fecha_inicio > fecha_fin:
+                messages.warning(
+                    request,
+                    "La fecha de inicio no puede ser mayor que la fecha de fin."
+                )
+                return redirect(request.META.get('HTTP_REFERER', '/'))
+
+        with connection.cursor() as cursor:
+            cursor.callproc('sp_reporte_recaudacion_sismed', [fecha_inicio, fecha_fin])
+            columnas = [col[0] for col in cursor.description]
+            datos = [dict(zip(columnas, row)) for row in cursor.fetchall()]
+
+        template = get_template('reclamo/reporte_pdf_consolidado_x_clasificador_sismed.html')
+        html = template.render({
+            'datos': datos,
+            'fecha_inicio': fecha_inicio,
+            'fecha_fin': fecha_fin
+        })
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="reporte_recaudacion_sismed.pdf"'
+
+        pisa.CreatePDF(html, dest=response)
+
+        return response
+
+
+ 
+
+class Reporte_consolidado_x_clasificador_admin_sismed_excel(View):
+
+    def get(self, request):
+
+        fecha_inicio = request.GET.get(
+            'fecha_inicio'
+        )
+
+        fecha_fin = request.GET.get(
+            'fecha_fin'
+        )
+
+        # ======================
+        # VALIDAR FECHAS
+        # ======================
+        if fecha_inicio and fecha_fin:
+
+            if fecha_inicio > fecha_fin:
+
+                messages.warning(
+                    request,
+                    "La fecha de inicio no puede ser mayor que la fecha de fin."
+                )
+
+                return redirect(
+                    request.META.get(
+                        'HTTP_REFERER',
+                        '/'
+                    )
+                )
+
+        # ======================
+        # STORE PROCEDURE
+        # ======================
+        with connection.cursor() as cursor:
+
+            cursor.callproc(
+                'sp_reporte_recaudacion_sismed',
+                [
+                    fecha_inicio,
+                    fecha_fin
+                ]
+            )
+
+            columnas = [
+                col[0]
+                for col in cursor.description
+            ]
+
+            datos = [
+                dict(
+                    zip(
+                        columnas,
+                        row
+                    )
+                )
+                for row in cursor.fetchall()
+            ]
+
+        # ======================
+        # EXCEL
+        # ======================
+        wb = openpyxl.Workbook()
+
+        ws = wb.active
+        ws.title = "Reporte SISMED"
+
+        # ======================
+        # TITULO
+        # ======================
+        ws.merge_cells(
+            start_row=1,
+            start_column=1,
+            end_row=1,
+            end_column=len(columnas)
+        )
+
+        ws["A1"] = (
+            "REPORTE CONSOLIDADO "
+            "POR CLASIFICADOR - SISMED"
+        )
+
+        ws["A1"].font = Font(
+            bold=True,
+            size=14
+        )
+
+        ws["A1"].alignment = Alignment(
+            horizontal="center"
+        )
+
+        # ======================
+        # SUBTITULO
+        # ======================
+        ws.merge_cells(
+            start_row=2,
+            start_column=1,
+            end_row=2,
+            end_column=len(columnas)
+        )
+
+        ws["A2"] = (
+            f"Desde: {fecha_inicio}   "
+            f"Hasta: {fecha_fin}"
+        )
+
+        ws["A2"].alignment = Alignment(
+            horizontal="center"
+        )
+
+        # ======================
+        # ENCABEZADOS
+        # ======================
+        fila_inicio = 4
+
+        for i, col in enumerate(
+            columnas,
+            start=1
+        ):
+
+            celda = ws.cell(
+                row=fila_inicio,
+                column=i
+            )
+
+            celda.value = col.upper()
+
+            celda.font = Font(
+                bold=True,
+                color="FFFFFF"
+            )
+
+            celda.fill = PatternFill(
+                fill_type="solid",
+                fgColor="1F4E78"
+            )
+
+            celda.alignment = Alignment(
+                horizontal="center"
+            )
+
+        # ======================
+        # DATOS
+        # ======================
+        fila = fila_inicio + 1
+
+        for row in datos:
+
+            for i, value in enumerate(
+                row.values(),
+                start=1
+            ):
+
+                ws.cell(
+                    row=fila,
+                    column=i
+                ).value = value
+
+            fila += 1
+
+        # ======================
+        # ÚLTIMA FILA
+        # ======================
+        if datos:
+
+            ultima = fila - 1
+
+            for i in range(
+                1,
+                len(columnas) + 1
+            ):
+
+                celda = ws.cell(
+                    row=ultima,
+                    column=i
+                )
+
+                celda.font = Font(
+                    bold=True
+                )
+
+                celda.fill = PatternFill(
+                    fill_type="solid",
+                    fgColor="D9D9D9"
+                )
+
+        # ======================
+        # AUTO ANCHO
+        # ======================
+        for i in range(
+            1,
+            len(columnas) + 1
+        ):
+
+            letra = get_column_letter(i)
+
+            max_length = 0
+
+            for row in range(
+                4,
+                ws.max_row + 1
+            ):
+
+                valor = ws.cell(
+                    row=row,
+                    column=i
+                ).value
+
+                if valor:
+                    largo = len(
+                        str(valor)
+                    )
+
+                    if largo > max_length:
+                        max_length = largo
+
+            ws.column_dimensions[
+                letra
+            ].width = max_length + 3
+
+        # ======================
+        # RESPONSE
+        # ======================
+        response = HttpResponse(
+            content_type=(
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            )
+        )
+
+        response[
+            'Content-Disposition'
+        ] = (
+            'attachment; '
+            'filename="reporte_recaudacion_sismed.xlsx"'
+        )
+
+        wb.save(response)
+
+        return response
+
+
 
 
 class CargarDepositoView(View):

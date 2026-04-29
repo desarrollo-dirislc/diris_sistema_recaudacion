@@ -81,7 +81,7 @@
     <div class="app-content content">
     <div class="content-wrapper">
         <div class="content-header row">
-            <h2>REPORTE CONSOLIDADO POR CLASIFICADOR DE INGRESOS SEGÚN ESTABLECIMIENTOS</h2>
+            <h2>REPORTE CONSOLIDADO POR CLASIFICADOR DE INGRESOS SEGÚN ESTABLECIMIENTOS -RDR</h2>
             <!-- FORMULARIO PDF -->
             <div class="content-header-left col-md-6 col-12 mb-2">
                <div class="content-header-left col-md-12 mb-2 d-flex justify-content-center">
@@ -130,12 +130,63 @@
         </div>
 
         <hr>
+<div class="content-header row">
+            <h2>REPORTE CONSOLIDADO POR CLASIFICADOR DE INGRESOS SEGÚN ESTABLECIMIENTOS - SISMED</h2>
+            <!-- FORMULARIO PDF -->
+            <div class="content-header-left col-md-6 col-12 mb-2">
+               <div class="content-header-left col-md-12 mb-2 d-flex justify-content-center">
 
+    <form method="get" action="{% url 'reclamo:reporte-pdf-consolidado-admin-sismed' %}" 
+          class="row g-2 align-items-end"
+          style="max-width: 600px; width: 100%;">
+
+        <div class="col-md-5">
+            <label class="form-label">Desde:</label>
+            <input type="date" name="fecha_inicio" class="form-control form-control-sm" required>
+        </div>
+
+        <div class="col-md-5">
+            <label class="form-label">Hasta:</label>
+            <input type="date" name="fecha_fin" class="form-control form-control-sm" required>
+        </div>
+
+        <div class="d-grid gap-2">
+
+    <!-- PDF -->
+    <button type="submit"
+            formaction="{% url 'reclamo:reporte-pdf-consolidado-admin-sismed' %}"
+            class="btn btn-danger btn-sm"
+            title="Exportar PDF">
+        <i class="la la-file-pdf-o"></i>
+    </button>
+
+    <!-- EXCEL -->
+    <button type="submit"
+            formaction="{% url 'reclamo:reporte-excel-consolidado-admin-sismed' %}"
+            class="btn btn-success btn-sm"
+            title="Exportar Excel">
+        <i class="la la-file-excel-o"></i>
+    </button>
+
+</div>
+
+    </form>
+
+</div>
+            </div>
+
+            
+
+        </div>
          
 
     </div>
 </div>
+
+
  
+
+   
 {% endblock container %}
 
 
