@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import path, include 
 
 from apps.reclamo.views.clasificacion_causa import get_clasificacion_autocomplete
-from apps.reclamo.views.entidad_reclamo import  EntidadReclamoCreate_general, EntidadReclamoCreate_monitoreo, EntidadReclamoCreate_monitoreo_general, EntidadReclamoCreate_programacion, EntidadReclamoCreate_programacion_entidad, EntidadReclamoCreate_prueba, EntidadReclamoCreate_secretaria, EntidadReclamoDelete_monitoreo, EntidadReclamoDelete_programacion, EntidadReclamoDelete_programacion_entidad, EntidadReclamoList, EntidadReclamoCreate, EntidadReclamoList1, EntidadReclamoList2, EntidadReclamoList3, EntidadReclamoList_cerrados, EntidadReclamoList_encurso, EntidadReclamoList_general, EntidadReclamoList_monitoreo, EntidadReclamoList_monitoreo_general, EntidadReclamoList_programacion, EntidadReclamoList_programacion_atendidas, EntidadReclamoList_programacion_soporte, EntidadReclamoList_programacion_soporte_atendidas, EntidadReclamoList_reportes_ventas_admin, EntidadReclamoList_reportes_ventas_entidad, EntidadReclamoList_secretaria, EntidadReclamoList_secretaria_cerrados, EntidadReclamoList_secretaria_encurso, EntidadReclamoList_sihce, EntidadReclamoList_sihce_cerrados, EntidadReclamoList_sihce_encurso, EntidadReclamoList_soporte, EntidadReclamoList_soporte_cerrados, EntidadReclamoList_soporte_encurso, EntidadReclamoList_ventas_x_entidad, EntidadReclamoUpdate, Mantenimiento_clasificador_ingreso, Mantenimiento_servicios, Reporte_consolidado_x_clasificador_admin, Reporte_consolidado_x_clasificador_excel_admin
+from apps.reclamo.views.entidad_reclamo import  CargarDepositoView, EliminarConsolidadoDiarioView, EntidadReclamoConsolidadoDiarioVentasListView, EntidadReclamoConsolidadoDiarioVentasListView_admin, EntidadReclamoCreate_general, EntidadReclamoCreate_monitoreo, EntidadReclamoCreate_monitoreo_general, EntidadReclamoCreate_programacion, EntidadReclamoCreate_programacion_entidad, EntidadReclamoCreate_prueba, EntidadReclamoCreate_secretaria, EntidadReclamoDelete_monitoreo, EntidadReclamoDelete_programacion, EntidadReclamoDelete_programacion_entidad, EntidadReclamoList, EntidadReclamoCreate, EntidadReclamoList1, EntidadReclamoList2, EntidadReclamoList3, EntidadReclamoList_cerrados, EntidadReclamoList_encurso, EntidadReclamoList_general, EntidadReclamoList_monitoreo, EntidadReclamoList_monitoreo_general, EntidadReclamoList_programacion, EntidadReclamoList_programacion_atendidas, EntidadReclamoList_programacion_soporte, EntidadReclamoList_programacion_soporte_atendidas, EntidadReclamoList_reportes_ventas_admin, EntidadReclamoList_reportes_ventas_entidad, EntidadReclamoList_secretaria, EntidadReclamoList_secretaria_cerrados, EntidadReclamoList_secretaria_encurso, EntidadReclamoList_sihce, EntidadReclamoList_sihce_cerrados, EntidadReclamoList_sihce_encurso, EntidadReclamoList_soporte, EntidadReclamoList_soporte_cerrados, EntidadReclamoList_soporte_encurso, EntidadReclamoList_ventas_x_entidad, EntidadReclamoUpdate, Mantenimiento_clasificador_ingreso, Mantenimiento_servicios, Reporte_consolidado_x_clasificador_admin, Reporte_consolidado_x_clasificador_excel_admin
  
 from apps.reclamo.views.entidad_reclamo import EntidadReclamoDelete, EntidadReclamoUpdate1, EntidadReclamoUpdate2, EntidadReclamoUpdate3, EntidadReclamoUpdate_general, EntidadReclamoUpdate_monitoreo, EntidadReclamoUpdate_programacion, EntidadReclamoUpdate_programacion_atendidas, EntidadReclamoUpdate_programacion_atendidas_soporte, EntidadReclamoUpdate_programacion_soporte, EntidadReclamoUpdate_secretaria, EntidadReclamoUpdate_secretaria_cerrados, EntidadReclamoUpdate_secretaria_encurso, EntidadReclamoUpdate_soporte, EntidadReclamoUpdate_soporte_cerrados, EntidadReclamoUpdate_soporte_encurso, EntidadReclamoUpdate_soporte_sihce, ReporteTicketPDFView,ReporteTicketPDFView_admin, atender_reclamo, atender_reclamo_sihce,dar_por_atendido, dar_por_atendido_programacion, exportar_programacion_pdf, guardar_comentario,  guardar_expediente, guardar_expediente2, guardar_expediente_programacion, guardar_expediente_programacion2, guardar_expediente_programacion2_soporte, guardar_expediente_programacion_soporte, guardar_trabajo, guardar_trabajo_programacion, liberar_caso, reporte_monitoreo, reporte_monitoreo_internet_excel, reporte_programaciones, reporte_programaciones_atendidas_excel, valoracion_atencion,reporte_tickets_excel,EntidadReclamoList_redes,EntidadReclamoList_redes_encurso,EntidadReclamoList_redes_cerrados,listar_personas_por_dependencia,listar_usuarios,asignar_reclamo
 from apps.reclamo.views.medida_adoptada import MedidaAdoptadaCreate,MedidaAdoptadaCreate2, MedidaAdoptadaCreate_entidad, MedidaAdoptadaCreate_soporte,MedidaAdoptadaUpdate, MedidaAdoptadaDelete
@@ -97,7 +97,37 @@ urlpatterns = [
 
     path('ventas-x-entidad', login_required(EntidadReclamoList_ventas_x_entidad.as_view()),
          name='ventas-x-entidad'),  
+        
+    path('consolidado-diario', login_required(EntidadReclamoConsolidadoDiarioVentasListView.as_view()),
+         name='consolidado-diario'),  
 
+
+    path(
+    'consolidado/cargar-deposito/<int:pk>/',
+    CargarDepositoView.as_view(),
+    name='cargar-deposito'
+),
+        
+
+    path(
+        'consolidado-diario/',
+        EntidadReclamoConsolidadoDiarioVentasListView.as_view(),
+        name='consolidado-diario'
+    ),
+
+path(
+        'consolidado-diario/eliminar/<int:pk>/',
+        EliminarConsolidadoDiarioView.as_view(),
+        name='eliminar-consolidado'
+    ),
+
+path(
+        'consolidado-diario-admin/',
+        EntidadReclamoConsolidadoDiarioVentasListView_admin.as_view(),
+        name='consolidado-diario-admin'
+    ),
+
+     
 
 path(
     'reporte-pdf-consolidado-admin/',

@@ -4,16 +4,22 @@ from apps.util.generic_filters import forms as gf
 from setup.models.clasificadores_ingreso import Clasificadores_ingreso
 from setup.models.servicios import SetupServicios
 
+ 
 
 class MedidaAdoptadaForm(forms.ModelForm):
 
+    cantidad = forms.IntegerField(
+        initial=1,
+        widget=forms.HiddenInput()
+    )
+
     # ==========================
-    # CLASIFICADOR (SELECT2 MANUAL)
+    # CLASIFICADOR
     # ==========================
     clasificador_ingreso = forms.ChoiceField(
         required=False,
         widget=forms.Select(attrs={
-            "class": "form-control select2",  # 🔥 IMPORTANTE
+            "class": "form-control select2",
             "id": "id_descripcion",
             "style": "width:100%;"
         }),
@@ -21,13 +27,15 @@ class MedidaAdoptadaForm(forms.ModelForm):
     )
 
     # ==========================
-    # SERVICIO (MODEL + SELECT2)
+    # SERVICIO
     # ==========================
     servicio = forms.ModelChoiceField(
-        queryset=SetupServicios.objects.all().order_by('descripcion_servicio'),
+        queryset=SetupServicios.objects.all().order_by(
+            'descripcion_servicio'
+        ),
         required=False,
         widget=forms.Select(attrs={
-            "class": "form-control select2",  # 🔥 SELECT2 AQUÍ
+            "class": "form-control select2",
             "id": "id_servicio",
             "style": "width:100%;"
         }),
@@ -37,40 +45,42 @@ class MedidaAdoptadaForm(forms.ModelForm):
 
     class Meta:
         model = MedidaAdoptada
-        fields = ['precio', 'cantidad']  # servicio y clasificador se manejan manualmente
+        fields = [
+            'precio',
+            'cantidad'
+        ]
 
     def __init__(self, *args, **kwargs):
-        self.entidad_reclamo = kwargs.pop('entidad_reclamo', None)
+        self.entidad_reclamo = kwargs.pop(
+            'entidad_reclamo',
+            None
+        )
+
         super().__init__(*args, **kwargs)
 
         if self.entidad_reclamo:
-            self.instance.entidad_reclamo = self.entidad_reclamo
+            self.instance.entidad_reclamo = (
+                self.entidad_reclamo
+            )
 
-        # -------------------------
-        # CLASIFICADOR CHOICES
-        # -------------------------
-        choices = [('', 'Seleccione una descripción')]
+        # ==========================
+        # CHOICES CLASIFICADOR
+        # ==========================
+        choices = [
+            ('', 'Seleccione una descripción')
+        ]
+
         for c in Clasificadores_ingreso.objects.all():
-            choices.append((f"{c.id}|{c.codigo}", c.descripcion))
+            choices.append(
+                (
+                    f"{c.id}|{c.codigo}",
+                    c.descripcion
+                )
+            )
 
-        self.fields['clasificador_ingreso'].choices = choices
-
-        # -------------------------
-        # PRESELECT CLASIFICADOR
-        # -------------------------
-        if self.instance.pk and self.instance.clasificador:
-            obj = Clasificadores_ingreso.objects.filter(
-                codigo=self.instance.clasificador
-            ).first()
-
-            if obj:
-                self.fields['clasificador_ingreso'].initial = f"{obj.id}|{obj.codigo}"
-
-        # -------------------------
-        # PRESELECT SERVICIO
-        # -------------------------
-        if self.instance.pk and self.instance.servicio:
-            self.fields['servicio'].initial = self.instance.servicio
+        self.fields[
+            'clasificador_ingreso'
+        ].choices = choices
 
         self.order_fields([
             'clasificador_ingreso',
@@ -82,25 +92,46 @@ class MedidaAdoptadaForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
 
-        # -------------------------
+        # ==========================
         # CLASIFICADOR
-        # -------------------------
-        data = self.cleaned_data.get('clasificador_ingreso')
+        # ==========================
+        data = self.cleaned_data.get(
+            'clasificador_ingreso'
+        )
+
         if data and '|' in data:
-            clasificador_id, codigo = data.split('|')
 
-            obj = Clasificadores_ingreso.objects.filter(pk=clasificador_id).first()
-            if obj:
-                instance.descripcion = obj.descripcion
-                instance.codigo = obj.id  # guardar ID
+            clasificador_id, codigo = (
+                data.split('|')
+            )
 
-        # -------------------------
-        # SERVICIO (GUARDAR ID + DESCRIPCIÓN)
-        # -------------------------
-        servicio = self.cleaned_data.get('servicio')
+            obj = Clasificadores_ingreso.objects.get(
+                pk=int(clasificador_id)
+            )
+
+            # guardar datos
+            instance.codigo = obj.id
+            instance.descripcion = (
+                obj.descripcion
+            )
+
+            # 🔥 GUARDAR CUENTA CORRIENTE
+            instance.cuentacorriente = int(
+                obj.cuentacorriente
+            )
+
+        # ==========================
+        # SERVICIO
+        # ==========================
+        servicio = self.cleaned_data.get(
+            'servicio'
+        )
+
         if servicio:
-            instance.servicio = servicio.id  
-            instance.servicio_descripcion = servicio.descripcion_servicio   
+            instance.servicio = servicio.id
+            instance.servicio_descripcion = (
+                servicio.descripcion_servicio
+            )
 
         if commit:
             instance.save()

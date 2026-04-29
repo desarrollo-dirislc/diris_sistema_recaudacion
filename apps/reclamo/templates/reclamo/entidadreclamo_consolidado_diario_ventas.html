@@ -1,0 +1,402 @@
+{% extends 'dashboard.html' %}
+{% load  paginator i18n %}
+
+{% block  container %}
+<style>
+    #leyenda {
+            margin-left: 20px;
+            background-color: grey; 
+            color: white; 
+        }
+        .prioridad-1 {
+            background-color: rgb(245, 11, 11); /* Color para Prioridad I */
+            color: white; /* Texto en blanco para mejor visibilidad */
+        }
+        .prioridad-2 {
+            background-color: rgb(243, 161, 10); /* Color para Prioridad II */
+            color: black; /* Texto en blanco para mejor visibilidad */
+        }
+        .prioridad-3 {
+            background-color: rgb(247, 243, 27); /* Color para Prioridad III */
+            color: black; /* Texto en blanco para mejor visibilidad */
+        }
+        .prioridad-4 {
+            background-color: green; /* Color para Prioridad III */
+            color: white; /* Texto en blanco para mejor visibilidad */
+        }
+        .prioridad-5 {
+            background-color: rgb(79, 148, 238); /* Color para Prioridad III */
+            color: white; /* Texto en blanco para mejor visibilidad */
+        }
+        .custom-margin {
+    margin-right: 50px; /* Ajusta este valor según sea necesario */
+}
+/* Estilo general */
+.table-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+/* Encabezado */
+.table thead th {
+  background-color: #78a0dd;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Filas */
+ 
+ 
+
+/* Celdas */
+.table td {
+  vertical-align: middle;
+  font-size: 0.95rem;
+}
+
+/* Código de ticket resaltado */
+.table td:nth-child(2) {
+  font-weight: 600;
+  color: #0d6efd;
+}
+
+/* Botones de opciones */
+.table .btn {
+  border-radius: 30px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+/* Responsive scroll */
+.table-responsive {
+  border-radius: 12px;
+}
+</style>
+
+   <div class="app-content content">
+<div class="content-wrapper">
+
+<div class="content-body">
+<section>
+<div class="row">
+<div class="col-12">
+<div class="card">
+
+<div class="card-header bg-light">
+    <h3><strong>Consolidado Diario de Ventas</strong></h3>
+</div>
+
+<div class="card-body">
+
+
+<form method="post" action="{% url 'reclamo:consolidado-diario' %}" class="row g-2 mb-3">
+    {% csrf_token %}
+
+    <div class="col-md-2">
+        <label>Fecha:</label>
+        <input type="date"
+               name="fecha"
+               class="form-control"
+               max="{% now 'Y-m-d' %}"
+               required>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-success w-100">
+            Generar consolidado diario
+        </button>
+    </div>
+</form>
+<br>
+
+<div class="table-responsive">
+<table class="table table-bordered table-striped">
+
+    <thead class="bg-primary text-white text-center">
+        <tr>
+            <th>Establecimiento</th>
+            <th>Fecha</th>
+            <th>Total Importe</th>
+            
+            <th>Cuenta Corriente</th>
+            <th>Estado</th>
+            <th>Cód. depósito</th>
+            <th>Fecha depósito</th>
+            <th>Constancia depósito</th>
+            <th>Opciones</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for row in lista %}
+        <tr>
+            <td class="text-center">{{ row.descripcion }}</td>
+            <td class="text-center">{{ row.fecha }}</td>
+            <td class="text-center">S/. {{ row.total_importe }}</td>
+
+           
+
+            <td class="text-center">
+                {% if row.cuentacorriente_id == '1' %}
+                    RDR
+                {% elif row.cuentacorriente_id == '2' %}
+                    SISMED
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+ <td class="text-center">
+                {% if row.estado == 0 %}
+                    
+                    <span class="badge badge-pill badge-danger">Pendiente de depósito</span>
+                {% else %}
+                    
+                    <span class="badge badge-pill badge-success">Depositado</span>
+                {% endif %}
+            </td>
+
+            <td class="text-center">{{ row.codigo_deposito | default:"" }}</td>
+            <td class="text-center">{{ row.fecha_deposito | default:"" }}</td>
+            <td class="text-center">{% if row.constancia_deposito %}
+ <a href="/media/{{ row.constancia_deposito }}" target="_blank">Constancia</a>
+                                                                {% endif %}</td>
+
+
+            <td class="text-center">
+
+     <div class="d-flex justify-content-center align-items-center gap-2">
+
+        <!-- CARGAR DEPÓSITO -->
+        <button type="button"
+                class="btn btn-primary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#depositoModal{{ row.id }}">
+            Cargar depósito
+        </button>
+
+
+        <!-- ELIMINAR -->
+        <form method="post"
+              action="{% url 'reclamo:eliminar-consolidado' row.id %}"
+              class="m-0"
+              onsubmit="return confirm('¿Desea eliminar este registro?');">
+
+            {% csrf_token %}
+
+            <button type="submit"
+                    class="btn btn-danger btn-sm">
+                Eliminar
+            </button>
+
+        </form>
+
+
+    </div>
+
+
+    <!-- MODAL -->
+    <div class="modal fade"
+         id="depositoModal{{ row.id }}"
+         tabindex="-1">
+
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <form method="post"
+                      action="{% url 'reclamo:cargar-deposito' row.id %}"
+                      enctype="multipart/form-data">
+
+                    {% csrf_token %}
+
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            Registrar depósito
+                        </h5>
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal">
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+                            <label>Código depósito</label>
+                            <input type="text"
+                                   name="codigo_deposito"
+                                   class="form-control"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Fecha depósito</label>
+                            <input type="date"
+                                   name="fecha_deposito"
+                                   class="form-control"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Constancia</label>
+                            <input type="file"
+                                   name="constancia_deposito"
+                                   class="form-control"
+                                   accept=".jpg,.jpeg,.png,.pdf"
+                                   required>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-bs-dismiss="modal">
+                            Cerrar
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-success">
+                            Guardar
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+</td>
+        </tr>
+
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">
+                No existen registros
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>
+</div>
+
+{% paginator %}
+
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+
+</div>
+</div>
+
+{% endblock %}
+
+
+
+
+
+ 
+
+ 
+
+{% block static %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("form-programacion");
+    const fechaInicioInput = document.getElementById("fecha_inicio");
+    const fechaFinInput = document.getElementById("fecha_fin");
+
+    form.addEventListener("submit", function (e) {
+      const fechaInicio = fechaInicioInput.value;
+      const fechaFin = fechaFinInput.value;
+
+      if (!fechaInicio || !fechaFin) {
+        alert("Debe seleccionar ambas fechas.");
+        e.preventDefault();
+        return;
+      }
+
+      if (fechaInicio > fechaFin) {
+        alert("La fecha de inicio no puede ser mayor que la fecha de fin.");
+        e.preventDefault();
+      }
+    });
+  });
+</script>
+
+
+
+    <script>
+        // Modal 1
+$('#expedienteModal').on('show.bs.modal', function (e) {
+    var id = $(e.relatedTarget).data('id');
+    $("#id_reclamo1").val(id);
+});
+
+$("#expedienteForm").submit(function (e) {
+    e.preventDefault();
+    $("#buttonGuardar1").prop('disabled', true);
+    setTimeout(function () {
+        $("#buttonGuardar1").prop('disabled', false);
+    }, 6000);
+    e.currentTarget.submit();
+});
+
+// Modal 2
+$('#expedienteModal2').on('show.bs.modal', function (e) {
+    var id = $(e.relatedTarget).data('id');
+    $("#id_reclamo2").val(id);
+});
+
+$("#expedienteForm2").submit(function (e) {
+    e.preventDefault();
+    $("#buttonGuardar2").prop('disabled', true);
+    setTimeout(function () {
+        $("#buttonGuardar2").prop('disabled', false);
+    }, 6000);
+    e.currentTarget.submit();
+});
+
+
+        $("#sinReclamoForm").submit(function (e) {
+            e.preventDefault();
+            $("#buttonGuardarSinReclamo").prop('disabled', true);
+            setTimeout(function () {
+                $("#buttonGuardarSinReclamo").prop('disabled', false);
+            }, 6000)
+            e.currentTarget.submit();
+        });
+
+
+//Modal 3
+$('#expedienteModal3').on('show.bs.modal', function (e) {
+    var id = $(e.relatedTarget).data('id');
+    $("#id_reclamo3").val(id);
+});
+
+
+
+
+  $('#programacionModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget); 
+    var id = button.data('id'); 
+    var modal = $(this);
+    modal.find('#id_programacion').val(id);
+  });
+    </script>
+{% endblock static %}
+
+
+
+ 

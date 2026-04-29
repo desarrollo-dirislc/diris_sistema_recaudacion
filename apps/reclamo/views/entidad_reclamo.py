@@ -23,6 +23,7 @@ from apps.reclamo.forms.entidad_reclamo_monitoreo import EntidadReclamoForm_moni
 from apps.reclamo.forms.entidad_reclamo_monitoreo_general import EntidadReclamoForm_monitoreo_general
 from apps.reclamo.forms.entidad_reclamo_programacion import EntidadReclamoForm_programacion
 from apps.reclamo.forms.entidad_reclamo_secretaria import EntidadReclamoForm_secretaria
+from apps.reclamo.models.consolidado_diario import ConsolidadoDiario
 from apps.reclamo.models.medida_adoptada import MedidaAdoptada
 from apps.reclamo.models.monitoreo_internet import Monitoreo_internet
 from apps.reclamo.models.programacion import Programacion
@@ -43,7 +44,7 @@ if os.path.splitext(os.path.basename(sys.argv[0]))[0] == 'pydoc-script':
 
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
-from django.views.generic import CreateView, UpdateView, DeleteView, ListView
+from django.views.generic import CreateView, TemplateView, UpdateView, DeleteView, ListView
 
 from apps.reclamo.forms.entidad_reclamo import EntidadReclamoForm, ReporteTicketForm
 from apps.reclamo.models.clasificacion_causa import ClasificacionCausa
@@ -2118,9 +2119,194 @@ class EntidadReclamoList_ventas_x_entidad(ListView):
 
 
 
+class EntidadReclamoConsolidadoDiarioVentasListView(ListView):
+    template_name = 'reclamo/entidadreclamo_consolidado_diario_ventas.html'
+    context_object_name = 'lista'
+    paginate_by = 20
+
+    def get_queryset(self):
+        entidad_id = self.request.user.entidad_id
+
+        with connection.cursor() as cursor:
+            cursor.callproc(
+                'sp_mostrar_consolidado_diario',
+                [entidad_id]
+            )
+
+            columnas = [col[0] for col in cursor.description]
+
+            resultados = [
+                dict(zip(columnas, fila))
+                for fila in cursor.fetchall()
+            ]
+
+        # más actual primero
+        resultados.sort(
+            key=lambda x: x['fecha'],
+            reverse=True
+        )
+
+        return resultados
+
+    def post(self, request, *args, **kwargs):
+        fecha = request.POST.get('fecha')
+
+        if not fecha:
+            messages.error(
+                request,
+                'Seleccione una fecha.'
+            )
+            return redirect(request.path)
+
+        entidad_id = request.user.entidad_id
+
+        # 🔥 VALIDAR SI YA EXISTE CONSOLIDADO
+        existe = ConsolidadoDiario.objects.filter(
+            establecimiento_id=entidad_id,
+            fecha=fecha
+        ).exists()
+
+        if existe:
+            messages.warning(
+                request,
+                'Ya se realizó el consolidado para esta fecha.'
+            )
+            return redirect(request.path)
+
+        # 🔥 SI NO EXISTE, EJECUTA PROCEDURE
+        with connection.cursor() as cursor:
+            cursor.callproc(
+                'sp_generar_consolidado_diario',
+                [entidad_id, fecha]
+            )
+
+        messages.success(
+            request,
+            'Consolidado generado correctamente.'
+        )
+
+        return redirect(request.path)
+    
+
+
+class EliminarConsolidadoDiarioView(View):
+
+    def post(self, request, pk, *args, **kwargs):
+        registro = get_object_or_404(
+            ConsolidadoDiario,
+            pk=pk
+        )
+
+        registro.delete()
+
+        messages.success(
+            request,
+            'Registro eliminado correctamente.'
+        )
+
+        return redirect('reclamo:consolidado-diario')
+    
 
 
 
+class EntidadReclamoConsolidadoDiarioVentasListView_admin(ListView):
+    template_name = 'reclamo/entidadreclamo_consolidado_diario_ventas_admin.html'
+    context_object_name = 'lista'
+    paginate_by = 20
+
+    def get_queryset(self):
+        q = self.request.GET.get('q', '').strip()
+        fecha_inicio = self.request.GET.get('fecha_inicio', '').strip()
+        fecha_fin = self.request.GET.get('fecha_fin', '').strip()
+
+        # 🔥 VALIDACIÓN FECHAS
+        if fecha_inicio and fecha_fin:
+            if fecha_inicio > fecha_fin:
+                messages.warning(
+                    self.request,
+                    "La fecha de inicio no puede ser mayor que la fecha de fin."
+                )
+                return []
+
+        with connection.cursor() as cursor:
+            cursor.callproc(
+                'sp_mostrar_consolidado_diario_admin'
+            )
+
+            columnas = [col[0] for col in cursor.description]
+
+            resultados = [
+                dict(zip(columnas, fila))
+                for fila in cursor.fetchall()
+            ]
+
+        # 🔍 Buscar establecimiento
+        if q:
+            resultados = [
+                row for row in resultados
+                if q.lower() in str(
+                    row.get('descripcion', '')
+                ).lower()
+            ]
+
+        # 📅 Fecha inicio
+        if fecha_inicio:
+            resultados = [
+                row for row in resultados
+                if str(row['fecha']) >= fecha_inicio
+            ]
+
+        # 📅 Fecha fin
+        if fecha_fin:
+            resultados = [
+                row for row in resultados
+                if str(row['fecha']) <= fecha_fin
+            ]
+
+        # Orden descendente
+        resultados.sort(
+            key=lambda x: x['fecha'],
+            reverse=True
+        )
+
+        return resultados
+
+    def post(self, request, *args, **kwargs):
+        fecha = request.POST.get('fecha')
+
+        if not fecha:
+            messages.error(
+                request,
+                'Seleccione una fecha.'
+            )
+            return redirect(request.path)
+
+        entidad_id = request.user.entidad_id
+
+        existe = ConsolidadoDiario.objects.filter(
+            establecimiento_id=entidad_id,
+            fecha=fecha
+        ).exists()
+
+        if existe:
+            messages.warning(
+                request,
+                'Ya se realizó el consolidado para esta fecha.'
+            )
+            return redirect(request.path)
+
+        with connection.cursor() as cursor:
+            cursor.callproc(
+                'sp_generar_consolidado_diario',
+                [entidad_id, fecha]
+            )
+
+        messages.success(
+            request,
+            'Consolidado generado correctamente.'
+        )
+
+        return redirect(request.path)
 
 
 class EntidadReclamoList_reportes_ventas_admin(ListView):
@@ -4533,3 +4719,36 @@ class Reporte_consolidado_x_clasificador_excel_admin(View):
 
         wb.save(response)
         return response
+
+
+class CargarDepositoView(View):
+
+    def post(self, request, pk, *args, **kwargs):
+        registro = get_object_or_404(
+            ConsolidadoDiario,
+            pk=pk
+        )
+
+        registro.codigo_deposito = request.POST.get(
+            'codigo_deposito'
+        )
+
+        registro.fecha_deposito = request.POST.get(
+            'fecha_deposito'
+        )
+
+        if request.FILES.get('constancia_deposito'):
+            registro.constancia_deposito = request.FILES.get(
+                'constancia_deposito'
+            )
+
+        registro.estado = 1
+
+        registro.save()
+
+        messages.success(
+            request,
+            'Depósito registrado correctamente.'
+        )
+
+        return redirect('reclamo:consolidado-diario-admin')

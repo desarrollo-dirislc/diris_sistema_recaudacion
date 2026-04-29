@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+from setup.models.clasificadores_ingreso import Clasificadores_ingreso
 from setup.models.servicios import SetupServicios
 
 from django.utils.decorators import method_decorator
@@ -245,65 +246,139 @@ class MedidaAdoptadaDelete(DeleteView):
 class MedidaAdoptadaCreate_entidad(CreateView):
     model = MedidaAdoptada
     form_class = MedidaAdoptadaForm
-    template_name = 'reclamo/medidaadoptada_form_entidad.html'
+    template_name = (
+        'reclamo/medidaadoptada_form_entidad.html'
+    )
 
-    # 🔹 Pasar entidad_reclamo al formulario
+    # 🔹 Pasar entidad_reclamo
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        entidad_reclamo = get_object_or_404(EntidadReclamo, pk=self.kwargs['reclamo_id'])
-        kwargs['entidad_reclamo'] = entidad_reclamo
+
+        entidad_reclamo = get_object_or_404(
+            EntidadReclamo,
+            pk=self.kwargs['reclamo_id']
+        )
+
+        kwargs[
+            'entidad_reclamo'
+        ] = entidad_reclamo
+
         return kwargs
 
     # 🔹 Guardado personalizado
     def form_valid(self, form):
-        self.object = form.save(commit=False)
+        self.object = form.save(
+            commit=False
+        )
 
-        # Calcular importe
-        self.object.importe = self.object.precio * self.object.cantidad
+        # importe
+        self.object.importe = (
+            self.object.precio *
+            self.object.cantidad
+        )
 
-        # Asociar al reclamo (IMPORTANTE si no lo haces en el form)
-        self.object.entidad_reclamo_id = self.kwargs['reclamo_id']
+        # relacion reclamo
+        self.object.entidad_reclamo_id = (
+            self.kwargs['reclamo_id']
+        )
+
+        # 🔥 SI FORM NO LO GUARDA, FORZAR
+        data = form.cleaned_data.get(
+            'clasificador_ingreso'
+        )
+
+        if data and '|' in data:
+
+            clasificador_id, codigo = (
+                data.split('|')
+            )
+
+            obj = Clasificadores_ingreso.objects.get(
+                pk=int(clasificador_id)
+            )
+
+            self.object.cuentacorriente = int(
+                obj.cuentacorriente
+            )
 
         self.object.save()
+
         form.save_m2m()
 
-        messages.success(self.request, "Venta registrada correctamente")
+        messages.success(
+            self.request,
+            "Venta registrada correctamente"
+        )
 
-        return HttpResponseRedirect(self.get_success_url())
+        return HttpResponseRedirect(
+            self.get_success_url()
+        )
 
-    # 🔹 Redirección correcta (AQUÍ ESTABA TU ERROR)
+    # 🔹 Redirección
     def get_success_url(self):
-        return reverse_lazy('reclamo:medida-adoptada-new-entidad', kwargs={
-            'reclamo_id': self.kwargs['reclamo_id']
-        })
+        return reverse_lazy(
+            'reclamo:medida-adoptada-new-entidad',
+            kwargs={
+                'reclamo_id':
+                self.kwargs['reclamo_id']
+            }
+        )
 
     # 🔹 Contexto adicional
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        entidad_reclamo = get_object_or_404(EntidadReclamo, pk=self.kwargs['reclamo_id'])
-
-        # Totales
-        totales = entidad_reclamo.medidas_adoptadas.aggregate(
-            total_importe=Sum('importe'),
-            total_cantidad=Sum('cantidad')
+        context = super().get_context_data(
+            **kwargs
         )
 
-        # Servicios a JSON
-        servicios = SetupServicios.objects.all()
+        entidad_reclamo = get_object_or_404(
+            EntidadReclamo,
+            pk=self.kwargs['reclamo_id']
+        )
+
+        # Totales
+        totales = (
+            entidad_reclamo
+            .medidas_adoptadas
+            .aggregate(
+                total_importe=Sum(
+                    'importe'
+                ),
+                total_cantidad=Sum(
+                    'cantidad'
+                ),
+            )
+        )
+
+        # Servicios
+        servicios = (
+            SetupServicios.objects.all()
+        )
+
         servicios_json = {
             s.id: {
-                "precio": float(s.precio) if s.precio else 0
+                "precio": float(
+                    s.precio
+                ) if s.precio else 0
             }
             for s in servicios
         }
 
         context.update({
             'title': "Agregar venta",
-            'entidad_reclamo': entidad_reclamo,
-            'total_importe': totales['total_importe'] or 0,
-            'total_cantidad': totales['total_cantidad'] or 0,
-            'servicios_json': json.dumps(servicios_json)
+            'entidad_reclamo':
+                entidad_reclamo,
+            'total_importe':
+                totales[
+                    'total_importe'
+                ] or 0,
+            'total_cantidad':
+                totales[
+                    'total_cantidad'
+                ] or 0,
+            'servicios_json':
+                json.dumps(
+                    servicios_json
+                )
         })
 
         return context

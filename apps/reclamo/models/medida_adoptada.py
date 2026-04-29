@@ -43,7 +43,13 @@ class MedidaAdoptada(models.Model):
     fecha_culminacion = models.DateField(_('Fecha de culminación provista'), null=True, blank=True)
     usuario_soporte = models.PositiveIntegerField(_('Personal de soporte'),  null=True, blank=True)
     precio=models.FloatField(_('Precio (S/.)'),  null=False, blank=False)
-    cantidad = models.PositiveIntegerField(_('Cantidad:'), null=False, blank=False)
+    cantidad = models.PositiveIntegerField(
+    _('Cantidad:'),
+    null=True,
+    blank=True,
+    default=1
+)
+    cuentacorriente = models.IntegerField(_('Cuenta corriente'), null=True, blank=True)
     importe = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     establecimiento_id = models.PositiveIntegerField(_('Establecimiento'),  null=True, blank=True)
     servicio = models.PositiveIntegerField(_('Servicio'),  null=True, blank=True)

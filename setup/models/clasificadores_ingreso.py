@@ -6,6 +6,9 @@ class Clasificadores_ingreso(models.Model):
     codigo = models.CharField(_('Código clasificador'),max_length=300)  # campo entero autoincremental
 
     descripcion = models.CharField(_('Descripción '),max_length=300)
+    cuentacorriente = models.IntegerField(_('Cuenta corriente'), null=True, blank=True)   
+    estado = models.IntegerField(_('estado'), null=True, blank=True)    
+ 
 
     class Meta:
         db_table = 'setup_clasificadores_ingreso'  # nombre de la tabla en la BD
