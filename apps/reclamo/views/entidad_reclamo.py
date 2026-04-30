@@ -34,8 +34,10 @@ from apps.util.valid_user_access_views import valid_access_view, permission_and_
     valid_ipress_entidad_edit
 from main import settings
 from setup.forms.clasificador_ingreso import ClasificadoresIngresoForm
+from setup.forms.cuentas_contabilidad import ContabilidadCuentaForm
 from setup.forms.servicios import SetupServiciosForm
 from setup.models.clasificadores_ingreso import Clasificadores_ingreso
+from setup.models.cuentas_contabilidad import ContabilidadCuenta
 from setup.models.establecimientos import Establecimientos
 from setup.models.servicios import SetupServicios
 
@@ -135,6 +137,7 @@ mantenimiento_clasificador_ingreso = ['codigo','descripcion']
 mantenimiento_servicios = ['descripcion_servicio','precio']
 
 
+mantenimiento_cuentas_contabilidad= ['descripcion_contabilidad','codigo_contabilidad']
 
 
 inputs_hidden = ['created_at', 'updated_at',
@@ -4541,37 +4544,40 @@ class Mantenimiento_clasificador_ingreso(CreateView):
         mes = self.request.session.get('reclamo_mes')
 
         if anio and mes:
-            return reverse_lazy('reclamo:entidad-reclamo-list') + f"?anio={anio}&mes={mes}"
-        
-        return reverse_lazy('reclamo:entidad-reclamo-list')
-     
+            return reverse_lazy('reclamo:clasificador-ingreso') + f"?anio={anio}&mes={mes}"
+
+        return reverse_lazy('reclamo:clasificador-ingreso')
 
     def form_valid(self, form):
         messages.success(self.request, "Clasificador creado correctamente")
         return super().form_valid(form)
 
-        
-
     def get_initial(self):
         initial = super(Mantenimiento_clasificador_ingreso, self).get_initial()
+
         if self.request.method == 'GET':
-            initial.update(
-                {'periodo': '000000', 'tipo_institucion': 1, 'tipo_documento_usuario': 1,
-                 'tipo_documento_presenta': 1, 'competencia_reclamo': 1,
-                 'autorizacion_notificacion_correo': 1})
+            initial.update({
+                'periodo': '000000',
+                'tipo_institucion': 1,
+                'tipo_documento_usuario': 1,
+                'tipo_documento_presenta': 1,
+                'competencia_reclamo': 1,
+                'autorizacion_notificacion_correo': 1
+            })
+
         return initial
 
     def get_context_data(self, **kwargs):
-        title = "Nuevo Reclamo"
-        clasificaciones = ClasificacionCausa.objects.all()
+        context = super().get_context_data(**kwargs)
 
-        return dict(
-            super(Mantenimiento_clasificador_ingreso, self).get_context_data(**kwargs),
-            title=title,
-             
-            mantenimiento_clasificador_ingreso=mantenimiento_clasificador_ingreso
-        )
+        context['title'] = 'Nuevo Clasificador'
 
+        context['mantenimiento_clasificador_ingreso'] = mantenimiento_clasificador_ingreso
+
+        # 🔥 ESTA LÍNEA HACE QUE SE MUESTREN LOS DATOS EN LA TABLA
+        context['clasificadores'] = Clasificadores_ingreso.objects.all().order_by('-id')
+
+        return context
 
 
 class Mantenimiento_servicios(CreateView):
@@ -4584,13 +4590,7 @@ class Mantenimiento_servicios(CreateView):
         return super(Mantenimiento_servicios, self).dispatch(*args, **kwargs)
 
     def get_success_url(self):
-        anio = self.request.session.get('reclamo_anio')
-        mes = self.request.session.get('reclamo_mes')
-
-        if anio and mes:
-            return reverse_lazy('reclamo:entidad-reclamo-list') + f"?anio={anio}&mes={mes}"
-
-        return reverse_lazy('reclamo:entidad-reclamo-list')
+        return reverse_lazy('reclamo:servicios')
 
     def form_valid(self, form):
         messages.success(self.request, "Servicio creado correctamente")
@@ -4598,6 +4598,53 @@ class Mantenimiento_servicios(CreateView):
 
     def get_initial(self):
         initial = super(Mantenimiento_servicios, self).get_initial()
+
+        if self.request.method == 'GET':
+            initial.update({
+                'descripcion_servicio': '',
+                'precio': 0.0,
+            })
+
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['mantenimiento_servicios'] = mantenimiento_servicios
+
+        # 🔥 ESTA ES LA CLAVE PARA MOSTRAR LA TABLA
+        context['servicios'] = SetupServicios.objects.all().order_by('-id')
+
+        context['title'] = 'Nuevo Servicio'
+
+        return context
+
+
+class Mantenimiento_cuentas_contabilidad(CreateView):
+    form_class = ContabilidadCuentaForm
+    model = ContabilidadCuenta
+    
+    template_name = 'reclamo/mantenimiento_cuentas_contabilidad.html'
+
+    @method_decorator(valid_access_view(valid_ipress_entidad_add, login_url='/validate'))
+    def dispatch(self, *args, **kwargs):
+        return super(Mantenimiento_cuentas_contabilidad, self).dispatch(*args, **kwargs)
+
+    def get_success_url(self):
+        anio = self.request.session.get('reclamo_anio')
+        mes = self.request.session.get('reclamo_mes')
+
+        if anio and mes:
+            return reverse_lazy('reclamo:cuentas-contabilidad') + f"?anio={anio}&mes={mes}"
+
+        return reverse_lazy('reclamo:cuentas-contabilidad')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Servicio creado correctamente")
+        return super().form_valid(form)
+
+    def get_initial(self):
+        initial = super(Mantenimiento_cuentas_contabilidad, self).get_initial()
         if self.request.method == 'GET':
             initial.update({
                 'descripcion_servicio': '',
@@ -4606,12 +4653,14 @@ class Mantenimiento_servicios(CreateView):
         return initial
 
     def get_context_data(self, **kwargs):
-        title = "Nuevo Servicio"
+        context = super().get_context_data(**kwargs)
 
-        return dict(
-            super(Mantenimiento_servicios, self).get_context_data(**kwargs),
-            mantenimiento_servicios=mantenimiento_servicios,
-        )
+        context['mantenimiento_cuentas_contabilidad'] = mantenimiento_cuentas_contabilidad
+
+        context['cuentas'] = ContabilidadCuenta.objects.all().order_by('-id')
+
+        return context
+
 
 
     
@@ -5034,3 +5083,32 @@ class CargarDepositoView(View):
         )
 
         return redirect('reclamo:consolidado-diario-admin')
+    
+
+
+class EliminarCuentaContabilidad(DeleteView):
+    model = ContabilidadCuenta
+
+    def get_success_url(self):
+        messages.success(self.request, "Registro eliminado correctamente")
+        return reverse_lazy('reclamo:cuentas-contabilidad')
+    
+
+class EliminarServicio(View):
+
+    def post(self, request, pk):
+        SetupServicios.objects.filter(pk=pk).delete()
+
+        messages.success(request, "Servicio eliminado correctamente")
+
+        return redirect('reclamo:servicios')
+    
+
+class EliminarClasificadorIngreso(View):
+
+    def post(self, request, pk):
+        Clasificadores_ingreso.objects.filter(pk=pk).delete()
+
+        messages.success(request, "Clasificador eliminado correctamente")
+
+        return redirect('reclamo:clasificador-ingreso')
