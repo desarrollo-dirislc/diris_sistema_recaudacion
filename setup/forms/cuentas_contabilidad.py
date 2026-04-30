@@ -13,14 +13,14 @@ class ContabilidadCuentaForm(forms.ModelForm):
         widgets = {
             'descripcion_contabilidad': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ingrese descripción contable'
+                'placeholder': 'Ingrese descripción de la cuenta contable'
             }),
             'codigo_contabilidad': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ingrese código contable'
+                'placeholder': 'Ingrese código de la cuenta contable'
             }),
         }
         labels = {
-            'descripcion_contabilidad': 'Descripción Contabilidad',
-            'codigo_contabilidad': 'Código Contabilidad',
+            'descripcion_contabilidad': 'Descripción Cuenta Contable',
+            'codigo_contabilidad': 'Código Cuenta Contable',
         }
